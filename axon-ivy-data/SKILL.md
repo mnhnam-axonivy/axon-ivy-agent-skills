@@ -1,0 +1,85 @@
+---
+name: axon-ivy-data
+description: Rules and patterns for Axon Ivy data classes (.d.json files).
+---
+
+## Use Together With
+
+- `axon-ivy-workflow-guide` - Step-by-step workflow creation
+- `axon-ivy-process` - For process that uses these data classes
+
+## Data Class Types
+
+| Type | Location | Purpose |
+|------|----------|---------|
+| Master Data | `dataclasses/` | Workflow state container |
+| Dialog Data | `src_dataClasses/` | Auto-generated UI bindings |
+
+## .d.json Schema
+
+See `schema.json` in this skill folder for full JSON schema reference.
+
+**Required fields:** `simpleName`, `namespace`
+
+**Field properties:** `name` (required), `type`, `modifiers`, `comment`, `annotations`
+
+**Modifiers:** `PERSISTENT`, `ID`, `GENERATED`, `NOT_NULLABLE`, `UNIQUE`, `NOT_UPDATEABLE`, `NOT_INSERTABLE`, `VERSION`
+
+## .d.json Examples
+
+### Basic Master Data
+
+```json
+{
+  "$schema" : "https://json-schema.axonivy.com/data-class/13.2.0/data-class.json",
+  "simpleName" : "OnboardingData",
+  "namespace" : "hr.onboarding",
+  "fields" : [ {
+    "name" : "onboarding",
+    "type" : "hr.onboarding.model.Onboarding",
+    "modifiers" : [ ]
+  }, {
+    "name" : "status",
+    "modifiers" : [ ]
+  } ]
+}
+```
+
+### With Comments
+
+```json
+{
+  "$schema" : "https://json-schema.axonivy.com/data-class/13.2.0/data-class.json",
+  "simpleName" : "HiringData",
+  "namespace" : "hr.hiring",
+  "fields" : [ {
+    "name" : "candidate",
+    "type" : "hr.hiring.model.Candidate",
+    "modifiers" : [ ],
+    "comment" : "The candidate being processed"
+  }, {
+    "name" : "approved",
+    "type" : "Boolean",
+    "modifiers" : [ ]
+  } ]
+}
+```
+
+### With List Type
+
+```json
+{
+  "$schema" : "https://json-schema.axonivy.com/data-class/13.2.0/data-class.json",
+  "simpleName" : "ProjectData",
+  "namespace" : "project.management",
+  "fields" : [ {
+    "name" : "tasks",
+    "type" : "List<project.model.Task>",
+    "modifiers" : [ ]
+  }, {
+    "name" : "notes",
+    "type" : "List<String>",
+    "modifiers" : [ ]
+  } ]
+}
+```

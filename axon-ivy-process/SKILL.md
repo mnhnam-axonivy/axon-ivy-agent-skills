@@ -1,0 +1,314 @@
+---
+name: axon-ivy-process
+description: Rules and patterns for creating and editting Axon Ivy workflow processes (.p.json files).
+---
+
+## Schema Reference
+
+See `axon-ivy-process-schema-13.2.0/` folder for JSON schemas:
+
+- `process.json` - Main process schema (id, kind, elements, layout)
+- `process/ProcessKind.json` - Process kind enum (ROOT, SUB)
+- `elements/ElementNode.json` - Element node structure (id, type, name)
+- `visual/VisualLayout.json` - Visual layout (nodes, connectors)
+
+## After Using This Skill
+
+**MANDATORY**: After creating or modifying any `.p.json` file, use `axon-ivy-process-verify` skill to validate the output against common errors.
+
+## Use Together With
+
+- `axon-ivy-process-verify` - **MUST use after** generating/editing `.p.json` files
+- `axon-ivy-workflow-guide` - Step-by-step workflow creation
+- `axon-ivy-data` - For master data class and models
+- `axon-ivy-html` - For dialog UIs
+- `axon-ivy-custom-fields` - For task/case/start custom fields configuration
+
+## Load References When Needed
+
+- Script code patterns (variable scope, casting, logging) → Load `code.md`
+- Calling subprocesses (SubProcessCall, CallSubStart/End) → Load `subprocess.md`
+- Signal-based start (SignalStartEvent) → Load `signal.md`
+- Dialog processes in `src_hd/` (HtmlDialogStart/End, MethodStart) → Load `dialog-process.md`
+- Embedded grouping (EmbeddedProcess) → Load `embedded.md`
+
+## Process JSON Structure
+
+```json
+{
+  "$schema": "https://json-schema.axonivy.com/process/13.2.0/process.json",
+  "id": "UNIQUE_HEX_ID",
+  "kind": "ROOT",
+  "config": {
+    "data": "package.name.MasterDataClass"
+  },
+  "elements": [ ... ],
+  "layout": {
+    "lanes": [
+      { "name": "Lane Name", "size": 480 }
+    ]
+  }
+}
+```
+
+### Process Kind
+
+- `ROOT` — Main process, entry point for workflow (default)
+- `SUB` — Sub-process, called by other processes
+
+## Element Types
+
+### RequestStart (Entry Point)
+
+```json
+{
+  "id": "f0",
+  "type": "RequestStart",
+  "name": "start",
+  "config": {
+    "signature": "start",
+    "request": {
+      "name": "Process Name",
+      "description": "Process description"
+    },
+    "case": {
+      "name": "Case: <%= param.name %>",
+      "customFields": [
+        { "name": "caseType", "value": "\"HR Request\"" },
+        { "name": "businessUnit", "value": "param.department" }
+      ]
+    },
+    "start": {
+      "customFields": [
+        { "name": "processCategory", "value": "\"HR Onboarding\"" },
+        { "name": "requiredRole", "value": "\"HRManager\"" }
+      ]
+    }
+  },
+  "visual": { "at": { "x": 40, "y": 64 } },
+  "connect": [{ "id": "f0_1", "to": "f1" }]
+}
+```
+
+**IMPORTANT**: Before adding `customFields` to RequestStart, use `axon-ivy-custom-fields` skill to define fields in `config/custom-fields.yaml` (load `case.md` for Cases, `start.md` for Starts).
+
+### TaskSwitchEvent (Human Task)
+
+```json
+{
+  "id": "f1",
+  "type": "TaskSwitchEvent",
+  "name": "Task Name",
+  "config": {
+    "task": {
+      "name": "Task for <%= in1.project.name %>",
+      "description": "Task description",
+      "skipTasklist": true,
+      "responsible": {
+        "type": "ROLE_FROM_ATTRIBUTE",
+        "script": "in.roleName"
+      },
+      "customFields": [
+        { "name": "employeeName", "value": "in.employee.name" },
+        { "name": "department", "value": "in.employee.department" }
+      ]
+    },
+    "case": {
+      "name": "Case Name",
+      "description": "Case description"
+    },
+    "output": {
+      "code": "ivy.case.attachToBusinessCase(in.parentCaseId);"
+    }
+  },
+  "visual": { "at": { "x": 128, "y": 64 } },
+  "connect": [{ "id": "f1_2", "to": "f2" }]
+}
+```
+
+**Task responsible types:**
+
+- `ROLE_FROM_ATTRIBUTE` — role name from expression: `"script": "in.roleName"`
+- `USER_FROM_ATTRIBUTE` — username from expression: `"script": "in.username"`
+
+**Task expiry (optional)**: Add `expiry` inside `task` to set a deadline.
+
+```json
+"task": {
+  "name": "Review Document",
+  "expiry": {
+    "timeout": "new Duration(\"3D\")"
+  }
+}
+```
+
+**CRITICAL — Duration format**: Use `new Duration("XD")` for days or `new Duration("XH")` for hours (capital letter). Do NOT use shorthand like `"3d"` or `"5d"`.
+
+**IMPORTANT**: Before adding `customFields` to TaskSwitchEvent, use `axon-ivy-custom-fields` skill (load `task.md`) to define fields in `config/custom-fields.yaml` under `Tasks:`.
+
+### DialogCall (UI Dialog)
+
+```json
+{
+  "id": "f2",
+  "type": "DialogCall",
+  "name": "Dialog Name",
+  "config": {
+    "dialog": "package.DialogName:start()",
+    "output": {
+      "map": {
+        "out": "in",
+        "out.result": "result.data"
+      }
+    }
+  },
+  "visual": { "at": { "x": 248, "y": 64 } },
+  "connect": [{ "id": "f2_3", "to": "f3" }]
+}
+```
+
+**Note**: `dialog` uses `.` (dot) package separators. This is different from `SubProcessCall.processCall` which uses `/` (slash) path separators.
+
+### Script (Code Execution)
+
+```json
+{
+  "id": "f3",
+  "type": "Script",
+  "name": "Script Name",
+  "config": {
+    "output": {
+      "code": [
+        "import package.ClassName;",
+        "in.field = value;",
+        "ivy.case.name = \"Case: \" + in.name;"
+      ]
+    },
+    "sudo": true
+  },
+  "visual": { "at": { "x": 416, "y": 64 } },
+  "connect": [{ "id": "f3_4", "to": "f4" }]
+}
+```
+
+`sudo: true` — execute with elevated permissions (optional).
+
+For detailed script code patterns, load `code.md`.
+
+### Alternative (Conditional Branch)
+
+```json
+{
+  "id": "f4",
+  "type": "Alternative",
+  "name": "Condition?",
+  "config": {
+    "conditions": {
+      "f4_5": "in.value != null",
+      "f4_6": ""
+    }
+  },
+  "visual": { "at": { "x": 520, "y": 64 } },
+  "connect": [
+    { "id": "f4_5", "to": "f5" },
+    { "id": "f4_6", "to": "f6" }
+  ]
+}
+```
+
+**CRITICAL — Condition rules**:
+1. Every outgoing connection ID MUST have a matching key in `conditions`. Missing entries cause runtime errors.
+2. The default/fallback branch uses an empty string `""` as its condition value.
+3. If there are N connections, there must be exactly N entries in `conditions`.
+
+### TaskEnd (Process End)
+
+```json
+{
+  "id": "f5",
+  "type": "TaskEnd",
+  "name": "Success",
+  "visual": { "at": { "x": 700, "y": 64 } }
+}
+```
+
+### ProgramInterface (AI/External Call)
+
+```json
+{
+  "id": "f6",
+  "type": "ProgramInterface",
+  "name": "AI Task",
+  "config": {
+    "javaClass": "com.axonivy.utils.smart.workflow.AgenticProcessCall",
+    "userConfig": {
+      "system": "You are an AI assistant...",
+      "query": "Process this: <%= dev.langchain4j.internal.Json.toJson(in.data) %>",
+      "resultType": "package.ResultClass.class",
+      "resultMapping": "in.result"
+    }
+  },
+  "visual": { "at": { "x": 600, "y": 64 }, "size": { "width": 128 } },
+  "boundaries": [{
+    "id": "f6_error",
+    "type": "ErrorBoundaryEvent",
+    "config": {
+      "errorCode": "ivy:error:program:exception",
+      "output": {
+        "map": {
+          "out": "in",
+          "out.errorMessage": "\"AI call failed\""
+        }
+      }
+    },
+    "connect": [{ "id": "f6e_7", "to": "f7" }]
+  }],
+  "connect": [{ "id": "f6_8", "to": "f8" }]
+}
+```
+
+## ID Conventions
+
+**CRITICAL**: Element IDs and Connection IDs share the same namespace and MUST NOT conflict.
+
+### ID Rules
+
+1. **Element IDs**: Use sequential IDs starting from `f0` (e.g., f0, f1, f2, ... f15)
+2. **Connection IDs**: Use IDs that DO NOT conflict with element IDs
+3. **Recommended pattern**: If elements are f0-f15, use f16+ for connections
+
+### Example ID Assignment
+
+```text
+Elements:     f0, f1, f2, f3, f4, f5 (6 elements)
+Connections:  f6, f7, f8, f9, f10    (5 connections)
+```
+
+## Connection Patterns
+
+### Sequential
+
+```json
+"connect": [{ "id": "f16", "to": "f1" }]
+```
+
+### With Labels
+
+```json
+"connect": [
+  { "id": "f22", "to": "f7", "label": { "name": "Yes" } },
+  { "id": "f23", "to": "f3", "label": { "name": "No", "segment": 0.51, "offset": { "x": 0, "y": -8 } } }
+]
+```
+
+- `segment` — position on connection line (0=start, 1=end)
+- `offset` — pixel displacement for label
+
+### With Via Points (routing around elements)
+
+```json
+"connect": [
+  { "id": "f23", "to": "f3", "via": [{ "x": 520, "y": 200 }] }
+]
+```
+
