@@ -1,6 +1,6 @@
 ---
 name: axon-ivy-java-data
-description: Rules and patterns for Java model classes, enums, and DTOs in Axon Ivy projects.
+description: Rules and patterns for Java model classes, enums, DTOs, and persistence (Ivy.repo() or JPA/SQL) in Axon Ivy projects.
 ---
 
 ## Use Together With

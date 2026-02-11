@@ -45,17 +45,28 @@ Create process in `processes/package/`:
 - [ ] Alternative nodes for conditions
 - [ ] TaskEnd for completion
 
-### Step 4: Create Dialog UIs
+### Step 4: Create Managed Beans (if needed)
 
-**Skills:** `axon-ivy-html`
+**Skill:** `axon-ivy-bean`
+
+Create beans in `src/package/managedbean/` when dialog needs Java logic beyond `#{data.xxx}`:
+
+- [ ] Create main bean with `@ManagedBean @ViewScoped`
+- [ ] Create sub-beans for complex tabs (optional)
+- [ ] Create document beans for file upload (optional)
+
+### Step 5: Create Dialog UIs
+
+**Skills:** `axon-ivy-html`, `axon-ivy-bean`
 
 Create dialogs in `src_hd/package/`:
 
 - [ ] Create dialog folder structure
 - [ ] Create XHTML with form layout
+- [ ] Bind to managed beans or `#{data.xxx}` as appropriate
 - [ ] Create Process.p.json for dialog flow
 
-### Step 5: Configure Roles & Users
+### Step 6: Configure Roles & Users
 
 **Skill:** `axon-ivy-config`
 
@@ -65,7 +76,7 @@ Update config files:
 - [ ] Add test users to `config/users.yaml`
 - [ ] Add variables to `config/variables.yaml`
 
-### Step 6: Test & Verify
+### Step 7: Test & Verify
 
 - [ ] Start the process from Portal
 - [ ] Complete each task in sequence

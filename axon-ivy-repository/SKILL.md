@@ -1,218 +1,35 @@
+````skill
 ---
 name: axon-ivy-repository
-description: Create repository classes for persisting entities to Axon Ivy Business Data using Ivy.repo().
+description: Create repository classes for persisting entities. Dispatches between Ivy.repo() (default) and JPA/SQL (advanced) approaches.
 ---
 
-## When to Use
+## Persistence Decision
 
-Create a repository when:
-
-- User asks to persist/save an entity
-- User asks to create CRUD operations for a model
-- Workflow needs to store/retrieve data
-
-## File Location
+When user needs data persistence, choose the approach:
 
 ```text
-src/package/repository/EntityRepository.java
+Does the user explicitly request SQL/JPA/database/persistence-utils?
+├── NO  → Load `ivy-repo.md` — DEFAULT (simple, no DB config needed)
+└── YES → Load `jpa-persistence.md` (requires databases.yaml, persistence.xml, DAOs)
 ```
 
-## Repository Template
+**DEFAULT**: Always load `ivy-repo.md` unless the user explicitly asks for:
+- SQL database, JPA entities, Hibernate, persistence-utils
+- DAO classes, CriteriaQuery, AuditableIdEntity
+- databases.yaml, persistence.xml configuration
+- An existing project already uses the JPA pattern
 
-```java
-package package.repository;
+## Always Load One
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+- Default persistence (Ivy Business Data) → Load `ivy-repo.md`
+- JPA/SQL persistence (entities, DAOs, services, database config) → Load `jpa-persistence.md`
 
-import org.apache.commons.lang3.StringUtils;
+## After Using This Skill
 
-import ch.ivyteam.ivy.business.data.store.search.Filter;
-import ch.ivyteam.ivy.environment.Ivy;
-import package.model.Entity;
-import package.model.EntityStatus;
+**MANDATORY**: After creating or modifying any entity or repository using `Ivy.repo()`, run the checklist in `ivy-repo-verify.md` to catch common errors (duplicate key violations, manual ID issues).
 
-/**
- * Repository for persisting Entity to Axon Ivy Business Data.
- */
-public class EntityRepository {
+## Entity/Model Definition
 
-  private static final String FIELD_ID = "id";
-  private static final String FIELD_NAME = "name";
-  private static final String FIELD_STATUS = "status";
-
-  private static EntityRepository instance;
-
-  public static EntityRepository getInstance() {
-    if (instance == null) {
-      instance = new EntityRepository();
-    }
-    return instance;
-  }
-
-  /**
-   * Creates a new entity.
-   */
-  public Entity create(Entity entity) {
-    if (entity == null) {
-      throw new IllegalArgumentException("Entity cannot be null");
-    }
-
-    if (StringUtils.isBlank(entity.getId())) {
-      entity.setId(UUID.randomUUID().toString());
-    }
-
-    Ivy.repo().save(entity);
-    return entity;
-  }
-
-  /**
-   * Retrieves all entities.
-   */
-  public List<Entity> findAll() {
-    return Ivy.repo().search(Entity.class).execute().getAll();
-  }
-
-  /**
-   * Finds entity by ID.
-   */
-  public Entity findById(String id) {
-    if (StringUtils.isBlank(id)) {
-      return null;
-    }
-    return Ivy.repo().search(Entity.class)
-        .textField(FIELD_ID)
-        .isEqualToIgnoringCase(id)
-        .execute()
-        .getFirst();
-  }
-
-  /**
-   * Finds entities by name (partial match).
-   */
-  public List<Entity> findByName(String name) {
-    if (StringUtils.isBlank(name)) {
-      return new ArrayList<>();
-    }
-    return Ivy.repo().search(Entity.class)
-        .textField(FIELD_NAME)
-        .containsAllWordPatterns(name)
-        .execute()
-        .getAll();
-  }
-
-  /**
-   * Finds entities by status.
-   */
-  public List<Entity> findByStatus(EntityStatus status) {
-    if (status == null) {
-      return new ArrayList<>();
-    }
-    return Ivy.repo().search(Entity.class)
-        .textField(FIELD_STATUS)
-        .isEqualToIgnoringCase(status.name())
-        .execute()
-        .getAll();
-  }
-
-  /**
-   * Updates an existing entity.
-   */
-  public Entity update(Entity entity) {
-    if (entity == null) {
-      return null;
-    }
-
-    Entity existing = findById(entity.getId());
-    if (existing == null) {
-      return create(entity);
-    }
-
-    // Copy fields from entity to existing
-    existing.setName(entity.getName());
-    existing.setStatus(entity.getStatus());
-    // Add more field mappings as needed
-
-    Ivy.repo().save(existing);
-    return findById(entity.getId());
-  }
-
-  /**
-   * Deletes an entity.
-   */
-  public void delete(Entity entity) {
-    if (entity == null) {
-      return;
-    }
-    Entity entityInRepo = findById(entity.getId());
-    if (entityInRepo != null) {
-      Ivy.repo().delete(entityInRepo);
-    }
-  }
-
-  /**
-   * Deletes an entity by ID.
-   */
-  public boolean deleteById(String id) {
-    Entity entity = findById(id);
-    if (entity != null) {
-      Ivy.repo().delete(entity);
-      return true;
-    }
-    return false;
-  }
-
-  /**
-   * Gets the count of all entities.
-   */
-  public long count() {
-    return Ivy.repo().search(Entity.class).execute().count();
-  }
-}
-```
-
-## Search with Multiple Filters
-
-```java
-public List<Entity> search(String name, EntityStatus status) {
-  var search = Ivy.repo().search(Entity.class);
-  List<Filter<Entity>> filters = new ArrayList<>();
-
-  if (StringUtils.isNotBlank(name)) {
-    filters.add(search.textField(FIELD_NAME).containsAllWordPatterns(name));
-  }
-
-  if (status != null) {
-    filters.add(search.textField(FIELD_STATUS).isEqualToIgnoringCase(status.name()));
-  }
-
-  if (filters.isEmpty()) {
-    return findAll();
-  }
-
-  for (Filter<Entity> f : filters) {
-    search.filter(f);
-  }
-
-  return search.execute().getAll();
-}
-```
-
-## Usage in Process Script
-
-```java
-import package.repository.EntityRepository;
-
-// Create
-EntityRepository.getInstance().create(in.entity);
-
-// Find
-in.entity = EntityRepository.getInstance().findById(in.entityId);
-
-// Update
-EntityRepository.getInstance().update(in.entity);
-
-// Delete
-EntityRepository.getInstance().delete(in.entity);
-```
+Both approaches use `axon-ivy-java-data` skill for creating model classes and enums.
+````

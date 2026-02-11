@@ -29,8 +29,9 @@ See `axon-ivy-process-schema-13.2.0/` folder for JSON schemas:
 - Script code patterns (variable scope, casting, logging) → Load `code.md`
 - Calling subprocesses (SubProcessCall, CallSubStart/End) → Load `subprocess.md`
 - Signal-based start (SignalStartEvent) → Load `signal.md`
-- Dialog processes in `src_hd/` (HtmlDialogStart/End, MethodStart) → Load `dialog-process.md`
+- Dialog processes in `src_hd/` (HtmlDialogStart/End, MethodStart, Exit vs End) → Load `logic-process.md`
 - Embedded grouping (EmbeddedProcess) → Load `embedded.md`
+- Error handling (ErrorBoundaryEvent, ErrorStartEvent) → Load `error-handling.md`
 
 ## Process JSON Structure
 
@@ -92,16 +93,25 @@ See `axon-ivy-process-schema-13.2.0/` folder for JSON schemas:
 
 **IMPORTANT**: Before adding `customFields` to RequestStart, use `axon-ivy-custom-fields` skill to define fields in `config/custom-fields.yaml` (load `case.md` for Cases, `start.md` for Starts).
 
-### TaskSwitchEvent (Human Task)
+### UserTask (Human Task + Dialog)
+
+**CRITICAL RULE**: When a human task is followed directly by an HTML dialog, **ALWAYS** use a single `UserTask` element instead of separate `TaskSwitchEvent` + `DialogCall` elements. `UserTask` combines task assignment and dialog display into one workflow activity.
 
 ```json
 {
   "id": "f1",
-  "type": "TaskSwitchEvent",
+  "type": "UserTask",
   "name": "Task Name",
   "config": {
+    "dialog": "package.DialogName:start(hr.model.Employee,hr.model.JobInfo)",
+    "call": {
+      "map": {
+        "param.employee": "in.employee",
+        "param.jobInfo": "in.jobInfo"
+      }
+    },
     "task": {
-      "name": "Task for <%= in1.project.name %>",
+      "name": "Task for <%= in.employee.name %>",
       "description": "Task description",
       "skipTasklist": true,
       "responsible": {
@@ -113,18 +123,24 @@ See `axon-ivy-process-schema-13.2.0/` folder for JSON schemas:
         { "name": "department", "value": "in.employee.department" }
       ]
     },
-    "case": {
-      "name": "Case Name",
-      "description": "Case description"
-    },
     "output": {
-      "code": "ivy.case.attachToBusinessCase(in.parentCaseId);"
+      "map": {
+        "out": "in",
+        "out.result": "result.data"
+      }
     }
   },
-  "visual": { "at": { "x": 128, "y": 64 } },
+  "visual": { "at": { "x": 128, "y": 64 }, "size": { "width": 128 } },
   "connect": [{ "id": "f1_2", "to": "f2" }]
 }
 ```
+
+**UserTask config properties:**
+
+- `dialog` — dialog signature using `.` (dot) package separators: `"package.DialogName:start(ParamTypes)"`
+- `call.map` — maps process data to dialog `param.*` inputs
+- `task` — task assignment configuration (name, description, responsible, expiry, customFields)
+- `output.map` — maps dialog `result.*` back to process data
 
 **Task responsible types:**
 
@@ -144,9 +160,44 @@ See `axon-ivy-process-schema-13.2.0/` folder for JSON schemas:
 
 **CRITICAL — Duration format**: Use `new Duration("XD")` for days or `new Duration("XH")` for hours (capital letter). Do NOT use shorthand like `"3d"` or `"5d"`.
 
-**IMPORTANT**: Before adding `customFields` to TaskSwitchEvent, use `axon-ivy-custom-fields` skill (load `task.md`) to define fields in `config/custom-fields.yaml` under `Tasks:`.
+**IMPORTANT**: Before adding `customFields` to UserTask, use `axon-ivy-custom-fields` skill (load `task.md`) to define fields in `config/custom-fields.yaml` under `Tasks:`.
 
-### DialogCall (UI Dialog)
+**Note on `dialog`**: Uses `.` (dot) package separators. This is different from `SubProcessCall.processCall` which uses `/` (slash) path separators.
+
+### TaskSwitchEvent (Task Without Dialog)
+
+Use `TaskSwitchEvent` only when a task does **NOT** have a dialog immediately following it (e.g., task followed by a subprocess, script, or other non-dialog element). If the task is followed by a `DialogCall`, use `UserTask` instead.
+
+```json
+{
+  "id": "f1",
+  "type": "TaskSwitchEvent",
+  "name": "Task Name",
+  "config": {
+    "task": {
+      "name": "Task for <%= in1.project.name %>",
+      "description": "Task description",
+      "responsible": {
+        "type": "ROLE_FROM_ATTRIBUTE",
+        "script": "in.roleName"
+      }
+    },
+    "case": {
+      "name": "Case Name",
+      "description": "Case description"
+    },
+    "output": {
+      "code": "ivy.case.attachToBusinessCase(in.parentCaseId);"
+    }
+  },
+  "visual": { "at": { "x": 128, "y": 64 } },
+  "connect": [{ "id": "f1_2", "to": "f2" }]
+}
+```
+
+### DialogCall (Standalone Dialog Without Task)
+
+Use `DialogCall` only when displaying a dialog that is **NOT** associated with a task assignment (e.g., an inline dialog in the same task context). If the dialog is preceded by a `TaskSwitchEvent`, use `UserTask` instead.
 
 ```json
 {

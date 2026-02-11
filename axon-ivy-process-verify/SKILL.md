@@ -18,9 +18,9 @@ RIGHT: "processCall": "hr/onboarding/agent/ExtractEmployeeData:extractEmployeeDa
 
 Note: `DialogCall.dialog` uses `.` (dot) — the opposite convention. Do not mix them up.
 
-### 2. DialogCall — Path uses `.` (dot), NOT `/` (slash)
+### 2. DialogCall / UserTask — Dialog path uses `.` (dot), NOT `/` (slash)
 
-Scan every `DialogCall` element. The `dialog` value must use `.` as package separator.
+Scan every `DialogCall` and `UserTask` element. The `dialog` value must use `.` as package separator.
 
 ```
 WRONG: "dialog": "package/DialogName:start()"
@@ -29,7 +29,7 @@ RIGHT: "dialog": "package.DialogName:start()"
 
 ### 3. Expiry timeout — Must use `new Duration(...)` constructor
 
-Scan every `TaskSwitchEvent` that has an `expiry.timeout`. The value must be a `Duration` constructor, not a shorthand string.
+Scan every `TaskSwitchEvent` and `UserTask` that has an `expiry.timeout`. The value must be a `Duration` constructor, not a shorthand string.
 
 ```
 WRONG: "timeout": "3d"
@@ -93,4 +93,90 @@ Collect ALL element `id` values and ALL connection `id` values in the file. They
 ```
 WRONG: element id "f5" AND connection id "f5"
 RIGHT: elements f0–f5, connections f6–f10
+```
+
+### 8. Script imports — Do NOT import types already available in IvyScript
+
+Scan every `Script` element's `output.code` for `import` statements. Several `java.*` types are **pre-imported** in IvyScript and importing them again causes:
+> `The import java.io.File collides with File`
+
+Common pre-imported types that MUST NOT be imported:
+- `java.io.File` — Ivy shadows this with its own `File` class. Use fully-qualified `java.io.File` instead.
+- `java.util.List`, `java.util.Map`, `java.util.Set` — use directly
+- `java.lang.*` — always available
+
+```
+WRONG: "import java.io.File;",
+       "File tempFile = File.createTempFile(...);"
+
+WRONG: "File tempFile = File.createTempFile(...);"
+       (Ivy resolves bare "File" to its own class, not java.io.File)
+
+RIGHT: "java.io.File tempFile = java.io.File.createTempFile(...);"
+```
+
+Imports that ARE typically needed: `java.nio.file.Files`, `java.nio.file.Path`, `org.primefaces.*`, project-specific classes.
+
+### 9. Script code — Use `as` for casting, NOT Java-style `(Type)` cast
+
+IvyScript uses the `as` keyword for type casting. Java-style parenthesized casts do NOT work.
+
+```
+WRONG: "UploadedFile uploaded = (UploadedFile) in.uploadedFile;"
+RIGHT: "UploadedFile uploaded = in.uploadedFile as UploadedFile;"
+```
+
+### 10. UserTask — Use `in` not `in1` in task expressions
+
+`UserTask` elements do NOT support `in1`. The variable `in1` is specific to `TaskSwitchEvent` output branches. In `UserTask`, always use `in` to access process data in `task.name`, `task.description`, and other expressions.
+
+```
+WRONG: "name": "Review - <%= in1.request.getEmployeeFullName() %>"
+RIGHT: "name": "Review - <%= in.request.getEmployeeFullName() %>"
+```
+
+Error if violated: `Variable 'in1' cannot be resolved`
+
+### 11. Visual layout — Elements must be well aligned
+
+Verify that all elements in the process have consistent visual alignment:
+
+- **Same-lane elements** must share the same `y` coordinate (e.g., all main flow elements at `y: 64`).
+- **Horizontal spacing** between sequential elements should be consistent (~128–160px apart on the x-axis). Wide elements (`"size": { "width": 128 }`) need more spacing to avoid overlap.
+- **Branch lanes** must use distinct, consistent `y` values (e.g., main flow `y: 64`, first branch `y: 192`, second branch `y: 320`).
+- **Via points** on connections to branches must align with the branching element's `x` and the target lane's `y`.
+
+```
+WRONG (misaligned y in same lane):
+  f1: { "x": 200, "y": 64 }
+  f2: { "x": 400, "y": 80 }   ← y differs
+
+WRONG (overlapping elements):
+  f1: { "x": 200, "y": 64 }, "size": { "width": 128 }
+  f2: { "x": 280, "y": 64 }   ← overlaps with f1 (200+128 > 280)
+
+RIGHT (consistent alignment and spacing):
+  f1: { "x": 200, "y": 64 }, "size": { "width": 128 }
+  f2: { "x": 400, "y": 64 }
+  f3: { "x": 560, "y": 64 }
+```
+
+### 12. Alternative — Every outgoing connection must have a label
+
+Scan every `Alternative` element. Each connection in `connect` MUST have a `label` with a `name` describing the decision branch, so users can understand the flow.
+
+```
+WRONG (no labels):
+  "connect": [
+    { "id": "c1", "to": "f2" },
+    { "id": "c2", "to": "f3" },
+    { "id": "c3", "to": "f4" }
+  ]
+
+RIGHT (all connections labeled):
+  "connect": [
+    { "id": "c1", "to": "f2", "label": { "name": "Approved" } },
+    { "id": "c2", "to": "f3", "label": { "name": "Returned" } },
+    { "id": "c3", "to": "f4", "label": { "name": "Rejected" } }
+  ]
 ```

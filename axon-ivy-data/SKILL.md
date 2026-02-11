@@ -8,6 +8,16 @@ description: Rules and patterns for Axon Ivy data classes (.d.json files).
 - `axon-ivy-workflow-guide` - Step-by-step workflow creation
 - `axon-ivy-process` - For process that uses these data classes
 
+## After Modifying Data Classes
+
+**MANDATORY**: After creating or modifying any `.d.json` file, run Maven build to regenerate the Java source classes:
+
+```bash
+mvn clean install -f <project-directory>/pom.xml
+```
+
+This generates the corresponding Java classes in `src_dataClasses/` (for dialog data) or compiles the data class definitions so they are available at runtime. Without this step, the process engine will not see the updated fields.
+
 ## Data Class Types
 
 | Type | Location | Purpose |

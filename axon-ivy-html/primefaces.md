@@ -29,7 +29,7 @@ Prefer PrimeFaces components (`p:*`) over raw HTML inputs when possible. Use:
 - `<p:selectOneRadio>` for radio button groups
 - `<p:selectManyCheckbox>` for multi-select checkboxes
 - `<p:selectBooleanCheckbox>` for boolean values
-- `<p:calendar>` for date and date-time input
+- `<p:datePicker>` for date and date-time input (do NOT use the older `<p:calendar>`)
 - `<p:commandButton>` for primary actions (Submit, Approve, Save)
 - `<p:commandLink>` for secondary actions (Cancel, Close, Back)
 
