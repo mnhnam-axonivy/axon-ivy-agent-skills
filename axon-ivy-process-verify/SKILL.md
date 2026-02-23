@@ -161,6 +161,26 @@ RIGHT (consistent alignment and spacing):
   f3: { "x": 560, "y": 64 }
 ```
 
+### 13. TriggerCall — `processCall` must include full parameter type signature
+
+Scan every `TriggerCall` element. If the target `RequestStart` has parameters, the `processCall` value MUST include the exact parameter types. Omitting them or using empty `()` causes the trigger to fail silently.
+
+```
+WRONG: "processCall": "hr/workflow/BusinessProcess:createLeaveRequest"
+WRONG: "processCall": "hr/workflow/BusinessProcess:createLeaveRequest()"
+RIGHT: "processCall": "hr/workflow/BusinessProcess:createLeaveRequest(String,java.time.LocalDate,java.time.LocalDate,String)"
+```
+
+Also verify that the target `RequestStart` has `"triggerable": true` set in its config, and that its first task's `responsible` uses `SYSTEM`:
+
+```json
+// WRONG — no user context when triggered programmatically
+"responsible": { "type": "ROLE_FROM_ATTRIBUTE", "script": "" }
+
+// RIGHT
+"responsible": { "roles": ["SYSTEM"] }
+```
+
 ### 12. Alternative — Every outgoing connection must have a label
 
 Scan every `Alternative` element. Each connection in `connect` MUST have a `label` with a `name` describing the decision branch, so users can understand the flow.

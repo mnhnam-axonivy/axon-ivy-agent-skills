@@ -5,12 +5,9 @@ description: Rules and patterns for creating and editting Axon Ivy workflow proc
 
 ## Schema Reference
 
-See `axon-ivy-process-schema-13.2.0/` folder for JSON schemas:
+See `axon-ivy-process-schema-14.0-dev/` folder for JSON schemas:
 
-- `process.json` - Main process schema (id, kind, elements, layout)
-- `process/ProcessKind.json` - Process kind enum (ROOT, SUB)
-- `elements/ElementNode.json` - Element node structure (id, type, name)
-- `visual/VisualLayout.json` - Visual layout (nodes, connectors)
+- `process.json` - Main process schema (self-contained with all `$defs` inline)
 
 ## After Using This Skill
 
@@ -37,9 +34,9 @@ See `axon-ivy-process-schema-13.2.0/` folder for JSON schemas:
 
 ```json
 {
-  "$schema": "https://json-schema.axonivy.com/process/13.2.0/process.json",
+  "$schema": "https://json-schema.axonivy.com/14.0-dev/project/process.json",
   "id": "UNIQUE_HEX_ID",
-  "kind": "ROOT",
+  "kind": "NORMAL",
   "config": {
     "data": "package.name.MasterDataClass"
   },
@@ -54,8 +51,10 @@ See `axon-ivy-process-schema-13.2.0/` folder for JSON schemas:
 
 ### Process Kind
 
-- `ROOT` — Main process, entry point for workflow (default)
-- `SUB` — Sub-process, called by other processes
+- `NORMAL` — Main process, entry point for workflow (default)
+- `CALLABLE_SUB` — Callable sub-process, invoked via `SubProcessCall`
+- `WEB_SERVICE` — Web service process
+- `HTML_DIALOG` — HTML dialog process
 
 ## Element Types
 
