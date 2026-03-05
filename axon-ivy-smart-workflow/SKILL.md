@@ -1,3 +1,8 @@
+---
+name: axon-ivy-smart-workflow
+description: Create AI-powered data extraction and processing in Axon Ivy workflows using the Smart Workflow AgenticProcessCall element.
+---
+
 # Axon Ivy Smart Workflow - AI Extraction Skill
 
 Use this skill when creating AI-powered data extraction or processing in Axon Ivy workflows.

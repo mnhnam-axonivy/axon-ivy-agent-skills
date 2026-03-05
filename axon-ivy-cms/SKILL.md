@@ -1,4 +1,3 @@
-````skill
 ---
 name: axon-ivy-cms
 description: Create and manage CMS (Content Management System) content — multi-language YAML files, binary content (files), and Portal CMS overrides.
@@ -238,4 +237,3 @@ ch.ivy.addon.portalkit.ui.jsf:
 ```
 
 **IMPORTANT**: Only override keys that exist in the Portal's default CMS. Check Portal documentation for available keys.
-````

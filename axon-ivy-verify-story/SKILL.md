@@ -1,4 +1,3 @@
-````skill
 ---
 name: axon-ivy-verify-story
 description: Verify story implementation by checking acceptance criteria, loading verify parts from other skills, and validating UI behavior (field interactions, disable/enable, show/hide, validations).
@@ -192,4 +191,3 @@ Trace the data flow through the full story:
 | Data Class | Wrong type for date fields | `String` instead of `java.util.Date` |
 | Entity | Missing `Serializable` | Class used in process data without it |
 | Config | Role name mismatch | Process `activator` doesn't match `roles.yaml` |
-````

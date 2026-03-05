@@ -800,7 +800,7 @@
     },
     "ScriptMacro": {
       "type": "string",
-      "description": "Supports macros for dynamic content. Macros are IvyScript expressions enclosed in '<%=' and '%>', enabling the embedding of dynamic values such as data class attributes. For example, to interpolate an attribute of a data class use '<%=in.attribute%>'.",
+      "description": "Supports macros for dynamic content.\nMacros are IvyScript expressions enclosed in '<%=' and '%>', enabling the embedding of dynamic values such as data class attributes.\nFor example, to interpolate an attribute of a data class use '<%=in.attribute%>'.",
       "additionalProperties": false
     },
     "ScriptMapCode": {

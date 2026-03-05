@@ -1,4 +1,3 @@
-````skill
 ---
 name: axon-ivy-cms-verify
 description: Verification checklist for Axon Ivy CMS files (cms_*.yaml). MUST be used after axon-ivy-cms skill to catch common errors.
@@ -199,4 +198,3 @@ Labels:
 ```
 
 Exception: Double quotes are needed for escape sequences like `\n` (newline).
-````
