@@ -1,6 +1,6 @@
 ---
 name: axon-ivy-process-verify
-description: Verification checklist for Axon Ivy process files (.p.json). MUST be used after axon-ivy-process skill to catch common errors.
+description: Verification checklist for Axon Ivy process files (.p.json). Use this whenever a .p.json file is created, modified, or reviewed — either after axon-ivy-process skill, or when a user asks to check, verify, or fix a process file for errors.
 ---
 
 **MANDATORY**: Run this checklist on EVERY `.p.json` file after creating or modifying it with the `axon-ivy-process` skill. Read the generated file, then verify each applicable check below. Fix any violations before considering the task done.
@@ -200,3 +200,17 @@ RIGHT (all connections labeled):
     { "id": "c3", "to": "f4", "label": { "name": "Rejected" } }
   ]
 ```
+
+### 14. Script code — Do NOT use `var` for local variables
+
+IvyScript does NOT support the `var` keyword for type inference. Always declare explicit types.
+
+```
+WRONG: "var caseUuid = ivy.case().uuid().toString();"
+RIGHT: "String caseUuid = ivy.case().uuid().toString();"
+
+WRONG: "var results = someService.findAll();"
+RIGHT: "List results = someService.findAll();"
+```
+
+Error if violated: `Class var not found`

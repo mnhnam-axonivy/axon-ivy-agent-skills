@@ -76,6 +76,19 @@ ivy.case.name = "Employee: " + in.employee.getName();
 in.employee.setCaseId(ivy.case.getId());
 ```
 
+### Access Case/Task UUID
+
+`ivy.case` and `ivy.task` are **properties**, not method calls. `uuid()` already returns `String` — no `.toString()` needed.
+
+```java
+// WRONG — ivy.case is not a method
+String caseUuid = ivy.case().uuid().toString();
+
+// CORRECT
+String caseUuid = ivy.case.uuid();
+String taskUuid = ivy.task.uuid();
+```
+
 ### Logging
 
 ```java

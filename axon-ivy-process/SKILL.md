@@ -1,6 +1,6 @@
 ---
 name: axon-ivy-process
-description: Rules and patterns for creating and editting Axon Ivy workflow processes (.p.json files).
+description: Rules and patterns for creating, editing, reviewing, and fixing Axon Ivy workflow processes (.p.json files). Use this when working with any .p.json file — including checking existing processes for errors, reviewing script code, or fixing IvyScript issues.
 ---
 
 ## Schema Reference
@@ -21,9 +21,16 @@ See `axon-ivy-process-schema-14.0-dev/` folder for JSON schemas:
 - `axon-ivy-html` - For dialog UIs
 - `axon-ivy-custom-fields` - For task/case/start custom fields configuration
 
+## Always Load on Invocation
+
+**MANDATORY** — load these every time the skill is invoked, regardless of task:
+
+- **`code.md`** — IvyScript rules for Script elements: variable types (`var` not supported), `ivy.case`/`ivy.task` property access, casting, logging. Nearly every process has Script elements, so these rules always apply.
+
 ## Load References When Needed
 
-- Script code patterns (variable scope, casting, logging) → Load `code.md`
+Load these only when the process contains the relevant element type:
+
 - Calling subprocesses (SubProcessCall, CallSubStart/End) → Load `subprocess.md`
 - Signal-based start (SignalStartEvent) → Load `signal.md`
 - Dialog processes in `src_hd/` (HtmlDialogStart/End, MethodStart, Exit vs End) → Load `logic-process.md`
