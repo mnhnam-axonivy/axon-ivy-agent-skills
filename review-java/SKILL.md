@@ -35,8 +35,8 @@ Answer yes/no to each. Flag every YES immediately before continuing.
 ### Tier 1 — Critical (Architecture)
 
 **C1. Dependency Rule**
-*Scan for:* imports from `java.sql.*`, `java.net.*`, or third-party libraries inside domain/use-case packages.
-*Why:* Core logic that imports infrastructure types cannot be tested or reused without that infrastructure. The entire inner layer is contaminated.
+*Scan for:* imports from `java.sql.*`, `java.net.*`, third-party libraries, **or platform APIs** (`ch.ivyteam.ivy.*`) inside domain/entity packages.
+*Why:* Core logic that imports infrastructure types cannot be tested or reused without that infrastructure. The entire inner layer is contaminated. In Axon Ivy projects, `Ivy.log()` and other `ch.ivyteam.*` calls must not appear in entity or domain classes — they belong only in adapter/service/listener classes.
 
 **C2. No Direct Instantiation — Inject Interfaces**
 *Scan for:* `new ConcreteClass(runtimeArg)` in business logic; multiple overloaded constructors that differ only in which concrete class they instantiate; `Function<X, ConcreteClass>` fields instead of `Function<X, Interface>`.
@@ -103,14 +103,19 @@ appendGhostNodes(nodes, ...);          // safe
 **M3. Logging at Silent Failure Paths**
 *Scan for:* `catch` blocks that swallow exceptions without logging; `Optional.empty()` returns with no log; null-check branches that fall back silently; use of `java.util.logging.Logger` or `System.out` instead of the platform logger.
 *Why:* Silent failures are invisible in production. At minimum, emit `WARN` with context (the unrecognized input value, the skipped ID) so operators can diagnose issues. In Axon Ivy projects, always use `Ivy.log()` — it integrates with the Ivy runtime log viewer. Never use `java.util.logging.Logger` or static `LOG` fields in Ivy classes.
+
+**Exception for entity classes:** entity/domain classes must NOT call `Ivy.log()` (violates C1). For internal serialization that cannot realistically fail, `catch (JsonProcessingException ignored) {}` is correct and intentional — not a M3 violation.
 ```java
 // Wrong — bypasses Ivy runtime logging
 private static final Logger LOG = Logger.getLogger(...);
 LOG.warning(() -> "msg " + value);
 
-// Correct — Ivy-integrated logging with String.format
+// Correct in service/listener/adapter — Ivy-integrated logging with String.format
 Ivy.log().warn(String.format("No sub-agent matched tool '%s' executedAt=%s",
     tool.getToolName(), tool.getExecutedAt()));
+
+// Correct in entity class — silent ignore (Ivy.log() would violate C1)
+} catch (JsonProcessingException ignored) {}
 ```
 
 **M4. Self-Documenting Code — No Restatement Comments**
@@ -148,6 +153,7 @@ chatEntries.stream().filter(entry -> !subAgentIds.contains(entry.getAgentId()))
 ```
 
 **M5c. Sort Method Names Must Include By-Clause and Direction**
+
 *Scan for:* sort/order methods that omit the sort key or direction from their name.
 *Why:* A reader should never have to open a sort method body to know what it sorts by and in which direction. Use the convention `<verb><Subject>By<Key><Dir>` where `<Dir>` is `Asc` or `Desc`.
 ```java
@@ -159,6 +165,34 @@ private List<TaskNode> sortTaskNodesByAgentTimestampAsc(List<TaskNode> tasks) { 
 
 // More examples:
 // sortUsersByCreatedAtDesc, sortEntriesByPriorityAsc, sortMessagesBySequenceAsc
+```
+
+**M6. Nested Record for Owned Value Objects**
+*Scan for:* simple value-holder classes (no business logic, no setters called outside their owner) that are used exclusively by one parent class and live in the same package as that parent.
+*Why:* A class used only by one owner adds a file with no benefit. A nested `public record` eliminates the file, enforces immutability, and provides correct `equals()`/`hashCode()` for free — which also fixes silent test failures when objects are compared after JSON round-trip (`containsExactly` uses `equals()`; a class without it falls back to reference equality and fails after deserialization creates new instances).
+
+Two caveats when converting to a record:
+1. **Jackson deserialization** — add `@JsonProperty` on each record component when using `new ObjectMapper()` without `ParameterNamesModule` registered (otherwise deserialization silently creates nulls).
+2. **Accessor naming** — record accessors are `field()` not `getField()`; update every call site.
+```java
+// Before: standalone class — separate file, no equals(), getField() accessors
+public class ToolExecution {
+  private String toolName;
+  public String getToolName() { return toolName; }
+  ...
+}
+
+// After: nested record in the owning entity — one file, free equals()/hashCode(), field() accessors
+public class AgentConversationEntry {
+  public record ToolExecution(
+      @JsonProperty("toolName")   String toolName,
+      @JsonProperty("arguments")  String arguments,
+      @JsonProperty("resultText") String resultText,
+      @JsonProperty("executedAt") String executedAt) {}
+  ...
+}
+// Callers: import com.example.AgentConversationEntry.ToolExecution;
+// Accessors: first.toolName()  (not first.getToolName())
 ```
 
 ---
