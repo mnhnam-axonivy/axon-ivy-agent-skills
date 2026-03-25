@@ -1,5 +1,5 @@
 ---
-name: axon-ivy-config
+name: axon-ivy-variable-config
 description: Provide information and rules for Axon Ivy variables configurations. Use when wokring with Axon Ivy variable.
 ---
 
